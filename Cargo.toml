@@ -1,0 +1,33 @@
+[package]
+name = "zfs_to_glacier"
+version = "0.1.0"
+authors = ["Anders Aagaard <aagaande@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+#tokio = { version = "1.0.1", features = ["full"] }
+regex = "1.4.2"
+chrono = "0.4"
+rusoto_core = "0.46.0"
+rusoto_s3 = "0.46.0"
+testcontainers = "0.11.0"
+rand = "0.8.0"
+md-5 = "0.9.1"
+base64 = "0.13.0"
+log = "0.4"
+env_logger = "0.8.2"
+serde = "1.0"
+serde_yaml = "0.8"
+clap = "3.0.0-beta.2"
+titlecase = "1.1.0"
+indicatif = "0.15.0"
+num_cpus = "1.13.0"
+tokio = { version = "1", features = ["full"] }
+bytes = "1.0.0"
+futures = "0.3.8"
+async-channel = "1.5.1"
+
+[dev-dependencies]
+pretty_assertions = "0.6.1"

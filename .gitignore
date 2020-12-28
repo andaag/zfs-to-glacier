@@ -1,0 +1,6 @@
+/target
+test.sh
+config.yaml
+cloudformation_zfsbackup.yaml
+backup.log
+.vscode/
