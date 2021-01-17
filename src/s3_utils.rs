@@ -31,6 +31,7 @@ pub enum StorageClass {
     STANDARD,
     Glacier,
     DeepArchive,
+    StandardInfrequentAccess
 }
 
 impl ToString for StorageClass {
@@ -39,6 +40,7 @@ impl ToString for StorageClass {
             StorageClass::STANDARD => "STANDARD".to_string(),
             StorageClass::Glacier => "GLACIER".to_string(),
             StorageClass::DeepArchive => "DEEP_ARCHIVE".to_string(),
+            StorageClass::StandardInfrequentAccess => "STANDARD_IA".to_string(),
         }
     }
 }
