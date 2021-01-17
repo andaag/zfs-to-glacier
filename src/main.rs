@@ -28,6 +28,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .block_on(app())
 }
 
+fn build_s3_client() -> S3Client {
+    let cred_provider =  DefaultCredentialsProvider::new().unwrap();
+    let mut http_config = HttpConfig::new();
+    http_config.read_buf_size(1024 * 1024 * 64);
+    http_config.pool_idle_timeout(Some(Duration::from_secs(5)));
+    let http_provider = HttpClient::new_with_config(http_config).unwrap();
+    S3Client::new_with(http_provider, cred_provider, Region::default())
+}
+
 async fn app() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::new("ZFS S3 backup")
         .version("0.1")
@@ -44,6 +53,7 @@ async fn app() -> Result<(), Box<dyn std::error::Error>> {
                 .arg(Arg::new("verbose").short('v').about("Verbose logging")),
         )
         .subcommand(App::new("generateconfig").about("Generate default local config"))
+        .subcommand(App::new("estimate_size").about("Estimate total size of backup"))
         .subcommand(App::new("generatecloudformation").about("Generate cloudformation file"))
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .get_matches();
@@ -54,14 +64,7 @@ async fn app() -> Result<(), Box<dyn std::error::Error>> {
             init_logging(verbose);
             let dryrun = args.occurrences_of("dryrun") > 0;
             let config = config::read_config()?;
-            let client = {
-                let cred_provider =  DefaultCredentialsProvider::new().unwrap();
-                let mut http_config = HttpConfig::new();
-                http_config.read_buf_size(1024 * 1024 * 64);
-                http_config.pool_idle_timeout(Some(Duration::from_secs(5)));
-                let http_provider = HttpClient::new_with_config(http_config).unwrap();
-                S3Client::new_with(http_provider, cred_provider, Region::default())
-            };            
+            let client = build_s3_client();          
 
             let local_zfs_state = get_local_zfs_state()?;
             let mut actions: Vec<S3Backup> = Vec::new();
@@ -133,6 +136,22 @@ async fn app() -> Result<(), Box<dyn std::error::Error>> {
         Some(("generateconfig", _)) => {
             init_logging(false);
             config::write_default_config()?
+        }
+        Some(("estimate_size", _)) => {
+            init_logging(false);
+            info!("Estimating total backup size");
+            info!(" - NB, compressed backups will not be estimated 100% correctly!");
+            let local_zfs_state = get_local_zfs_state()?;
+            let config = config::read_config()?;
+            let mut total_size = 0;
+            for config in config.configs {
+                let s3_backup_actions = get_pending_actions(&local_zfs_state, &config);                
+                for backup_action in s3_backup_actions {
+                    let estimated_size = backup_action.get_estimated_size()?;
+                    total_size += estimated_size;
+                }
+            }
+            info!("Estimated size for total backup is : {}gb", total_size / 1024 / 1024 / 1024)
         }
         Some(("generatecloudformation", _)) => {
             init_logging(false);

@@ -57,3 +57,8 @@ if [ $? -ne 0 ]; then
 fi
 curl -fsS --retry 3 -X POST --data-raw "$(tail -n 20 backup.log)" $url
 ```
+
+### FAQ
+
+- How much will this cost?
+  - Run zfs_to_glacier estimate_size, and plug that into the AWS cost calculator. API call prices etc should fall well within the free tier, so you really only need to calculate with storage prices.
