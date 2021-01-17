@@ -15,26 +15,26 @@ S3 snapshots are cheap... Especially if you are (like in my case) taking a backu
 3. zfs_to_glacier generatecloudformation
 4. inspect cloudformation file and upload to AWS. (Cloudformation -> Create -> new resource -> upload file). Name is freetext and no other parameters are needed.
 5. Click on resources -> BackupAccount -> Security Credentials -> Create access key.
-6. Copy the access key and secret key into env variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-7. Set AWS_REGION to whatever region you uploaded the file from. (If you run the command under you'll also see the region in the endpoint url). For example export AWS_REGION="eu-west-3"
-8. zfs_to_glacier sync
+6. Set environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+7. Set environment variable AWS_REGION to whatever region you uploaded the file from. (If you run the command under you'll also see the region in the endpoint url). For example export AWS_REGION="eu-west-3"
+8. Run zfs_to_glacier sync. You can run zfs_to_glacier sync -v -n to see what it would snapshot in incremental mode and in full mode.
 
-**SEE WARNINGS**
-
-## How reliable is this
-
-When sending files this will confirm both md5 checksums of each individual part of a file sent, and confirm that the zfs command exits with status 0. I don't *think* it's possible to send corrupted data. That said, if the zfs command exits with status code 0 and does not produce the required output of course this app would happily upload a corrupted snapshot.
-
-I would recommend taking great care when dealing with something as critical as backups, I rely on this tool personally, but it comes with 0 guarantees.
+**zfs_to_glacier keep encrypted data encrypted, read warnings!**
 
 ## Warnings
 
-1. zfs_to_glacier will keep your backups encrypted. This means if you do not have a backup of your backup key (if you use a key instead of a passphrase) you will *not* be able to recover with your backup.
-2. zfs_to_glacier uses S3's expiry, which means if you stop running this tool the expiry will keep going. This will eventually clear out your backups. I recommend using healthchecks.io or something like it to ensure that your backups keep going.
+1. zfs_to_glacier will keep your backups encrypted. They are sent with zfs send -w. This means if you do not have a backup of your backup key (if you use a key instead of a passphrase) you will *not* be able to recover your data from S3.
+2. zfs_to_glacier uses S3's expiry, which means if you stop running this tool the automatic expiry of old data will keep going. This will eventually clear out your backups. I recommend using healthchecks.io or something like it to ensure that your backups keep going.
+
+## How reliable is this
+
+When sending files this will confirm both md5 checksums of each individual part of a file sent, and confirm that the zfs command exits with status 0. I don't *think* it's possible to send corrupted data this way. That said, if the zfs command exits with status code 0 and does not produce the required output of course this app would happily upload a corrupted snapshot.
+
+I would recommend taking great care when dealing with something as critical as backups, I rely on this tool personally, but it comes with zero guarantees.
 
 ### Adding new pools
 
-1. If you need to add a new pool, regenrate your cloudformation template and instead of uploading a new template, update the existing one. NB : If you delete a pool, you need to clean out the bucket before, cloudformation will not delete a bucket that isn't empty.
+1. If you need to add a new pool, regenrate your cloudformation template and instead of uploading a new cloudformation template. Select the existing one and update it with the new file. NB : If you delete a pool, you need to clean out the bucket before, cloudformation will not delete a bucket that isn't empty.
 
 ### Limits
 
