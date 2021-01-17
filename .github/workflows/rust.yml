@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: cargo build --release && strip target/release/zfs_to_glacier && mv target/release/zfs_to_glacier target/release/zfs_to_glacier_amd64
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test -- --test-threads=1
 
   release:
     needs: build
