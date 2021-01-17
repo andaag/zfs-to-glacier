@@ -6,7 +6,7 @@ A little rust tool to do S3 backups of my sanoid zfs snapshots. (Although any sn
 
 S3 snapshots are cheap... Especially if you are (like in my case) taking a backup of a computer which is acting as a backup of something else and can take advantage of S3 deep archive. (NB : this means recovery time can increase, but price is very considerably decreased). I also quite like binary dumps in a dumb blob file storage. Backing up with something like rsync.net is more elegant, I would argue this is less complex.
 
-[AWS S3 recovery times](https://aws.amazon.com/glacier/). Deep glacier recovery is 12-48 hours. I know from experience that if I loose the backup of my backups 12-48hours to recover my data is the least of my problems.
+[AWS S3 recovery times](https://aws.amazon.com/glacier/). Deep glacier recovery is 12 hours. I know from experience that if I loose the backup of my backups 12hours to recover my data is the least of my problems. More information on the [s3 pricing page](https://aws.amazon.com/s3/pricing/).
 
 ## How
 
