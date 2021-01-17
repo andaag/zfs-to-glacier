@@ -54,6 +54,7 @@ jobs:
       with:
         name: zfs_to_glacier_amd64
     - name: Create a Release
+      id: create_release
       uses: actions/create-release@v1.1.4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
