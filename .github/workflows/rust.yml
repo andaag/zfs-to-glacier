@@ -36,6 +36,12 @@ jobs:
       run: cargo build --release && strip target/release/zfs_to_glacier && mv target/release/zfs_to_glacier target/release/zfs_to_glacier_amd64
     - name: Run tests
       run: cargo test -- --test-threads=1
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        name: zfs_to_glacier_amd64
+        path: target/release/zfs_to_glacier_amd64
+        retention-days: 5
 
   release:
     needs: build
@@ -46,7 +52,7 @@ jobs:
     - name: Download artifact
       uses: actions/download-artifact@v2
       with:
-        name: target/release/zfs_to_glacier_amd64
+        name: zfs_to_glacier_amd64
     - name: Create a Release
       uses: actions/create-release@v1.1.4
       with:
@@ -57,6 +63,6 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: target/release/zfs_to_glacier_amd64
+        asset_path: zfs_to_glacier_amd64
         asset_name: zfs_to_glacier_amd64
         asset_content_type: application/x-elf
