@@ -3,7 +3,7 @@ use crate::cmd_execute;
 use async_channel::{Receiver, Sender};
 use cmd_execute::CommandStreamActions;
 use futures::future;
-use log::{debug, warn};
+use log::{debug, error, warn};
 use md5::Digest;
 use rusoto_core::ByteStream;
 use rusoto_s3::{CreateMultipartUploadRequest, ListObjectsV2Request, S3Client, Tag, Tagging, S3};
@@ -254,15 +254,22 @@ where
         let sender = sender?;
         sender?;
     }
-    let completed_parts = {
-        // finish building completed parts
-        while let Ok(result) = rx_completedpart.recv().await {
-            completed_parts.push(result?);
-        }    
-        completed_parts.sort_by(|a, b| a.part_number.partial_cmp(&b.part_number).unwrap());
-        completed_parts
-    };
-    Ok(completed_parts)
+
+    let exit_status = child.wait()?;
+    if !exit_status.success() {
+        error!("zfs command exited with failure code {}", exit_status);
+        Err(Box::new(S3UploadFailedError("uploadparts".to_string(), format!("zfs command exited with error code {}", exit_status))))
+    } else {
+        let completed_parts = {
+            // finish building completed parts
+            while let Ok(result) = rx_completedpart.recv().await {
+                completed_parts.push(result?);
+            }    
+            completed_parts.sort_by(|a, b| a.part_number.partial_cmp(&b.part_number).unwrap());
+            completed_parts
+        };
+        Ok(completed_parts)
+    }
 }
 
 pub async fn upload_stdout_internal<'a, T: Read, F>(
@@ -358,8 +365,9 @@ where
                 tags.clone()
             );
             r?;
+            Ok(upload_context.get_bytes_sent().try_into()?)
         }
-        Err(_) => {
+        Err(original_err) => {
             warn!("  Aborting multipart upload file s3://{}/{}", bucket, key);
             let r: Result<(), Box<dyn Error>> = retry!(
                 |upload_context: UploadContext| async move {
@@ -375,10 +383,17 @@ where
                 },
                 upload_context.clone()
             );
-            r?;
+            match r {
+                Ok(_) => {
+                    Err(original_err)
+                }
+                Err(err) => {
+                    error!("Error during multipart upload, in addition abort_multipart_upload also failed: {}", err.to_string());
+                    Err(original_err)
+                }
+            }
         }
     }
-    Ok(upload_context.get_bytes_sent().try_into()?)
 }
 
 pub async fn upload_stdout<'a, T: Read, F>(

@@ -119,7 +119,7 @@ async fn test_command_exit_failure() -> Result<(), Box<dyn Error>> {
         let bucket = generate_unique_name();
         let client = create_client(&bucket).await?;
         let r = upload_stdout_internal(&client, Box::new(LargeFile { iterations:TEST_ITERATIONS, fail:true}), &bucket, "test_key", vec![], StorageClass::STANDARD, |_| {}, MIN_MULTIPART_SIZE).await;    
-        assert!(r.is_err());
+        assert_eq!(r.is_err(), true);
         Ok(())
     }))
 }
