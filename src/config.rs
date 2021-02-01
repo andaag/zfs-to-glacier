@@ -57,11 +57,11 @@ pub fn write_default_config() -> Result<(), Box<dyn Error>> {
 - pool_regex: \"rpool/.*\"
   incremental:
     snapshot_regex: \"daily\"
-    storage_class: \"DeepArchive\"
-    expire_in_days: 70
+    storage_class: \"StandardInfrequentAccess\"
+    expire_in_days: 40
   full:
     snapshot_regex: \"monthly\"
-    storage_class: \"DeepArchive\"
+    storage_class: \"DeepArchive\" #minimum storage period as of this writing is 180 days for deeparchive.
     expire_in_days: 200
   bucket: \"zfs-rpool\" #You can backup multiple pools to one bucket.",
     )?;
