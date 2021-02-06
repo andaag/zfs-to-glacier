@@ -1841,6 +1841,7 @@ dependencies = [
  "log",
  "md-5",
  "num_cpus",
+ "percent-encoding",
  "pretty_assertions",
  "rand 0.8.0",
  "regex",

@@ -5,8 +5,9 @@ use cmd_execute::CommandStreamActions;
 use futures::future;
 use log::{debug, error, warn};
 use md5::Digest;
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use rusoto_core::ByteStream;
-use rusoto_s3::{CreateMultipartUploadRequest, ListObjectsV2Request, S3Client, Tag, Tagging, S3};
+use rusoto_s3::{CreateMultipartUploadRequest, ListObjectsV2Request, S3Client, Tag, S3};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::default::Default;
@@ -287,14 +288,32 @@ pub async fn upload_stdout_internal<'a, T: Read, F>(
 where
     F: Fn(u64) -> (),
 {
+    let tags = {
+        let mut tags = tags;
+        tags.push(rusoto_s3::Tag {
+            key: "buffer_size".to_string(),
+            value: buf_size.to_string(),
+        });
+        let mut result = String::new();
+        for tag in tags {
+            if result.len() > 0 {
+                result.push('&');
+            }
+            result.push_str(&utf8_percent_encode(&tag.key, NON_ALPHANUMERIC).to_string());
+            result.push_str("=");
+            result.push_str(&utf8_percent_encode(&tag.value, NON_ALPHANUMERIC).to_string());
+        }
+        result
+    };
     let upload_id: Result<String, Box<dyn Error>> = {
         retry!(
-            |client: S3Client, bucket: String, key: String| async move {
+            |client: S3Client, bucket: String, key: String, tags: String| async move {
                 let upload_id = client
                     .create_multipart_upload(CreateMultipartUploadRequest {
                         bucket: bucket.clone(),
                         key: key.clone(),
                         storage_class: Some(storage_class.to_string()),
+                        tagging: Some(tags),
                         ..Default::default()
                     })
                     .await
@@ -303,7 +322,8 @@ where
             },
             client.clone(),
             bucket.to_string(),
-            key.to_string()
+            key.to_string(),
+            tags.clone()
         )
     };
     let upload_context = UploadContext {
@@ -339,32 +359,6 @@ where
                 },
                 upload_context.clone(),
                 completed_parts.clone()
-            );
-            r?;
-
-            let tags = {
-                let mut total_tags = tags.clone();
-                total_tags.push(rusoto_s3::Tag {
-                    key: "buffer_size".to_string(),
-                    value: upload_context.buf_size.to_string(),
-                });
-                total_tags
-            };
-            let r: Result<(), Box<dyn Error>> = retry!(
-                |upload_context: UploadContext, tags: Vec<Tag>| async move {
-                    upload_context
-                        .client
-                        .put_object_tagging(rusoto_s3::PutObjectTaggingRequest {
-                            bucket: upload_context.bucket.clone(),
-                            key: upload_context.key.clone(),
-                            tagging: Tagging { tag_set: tags },
-                            ..Default::default()
-                        })
-                        .await?;
-                    Ok(())
-                },
-                upload_context.clone(),
-                tags.clone()
             );
             r?;
             Ok(upload_context.get_bytes_sent().try_into()?)

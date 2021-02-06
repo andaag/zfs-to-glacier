@@ -3,7 +3,7 @@ use log::info;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rusoto_core::Region;
-use rusoto_s3::{CreateBucketRequest, GetObjectRequest, S3Client, S3};
+use rusoto_s3::{CreateBucketRequest, GetObjectRequest, GetObjectTaggingRequest, S3, S3Client};
 use std::env;
 use std::error::Error;
 use std::{str};
@@ -100,6 +100,17 @@ pub async fn download_file(bucket: &str, key: &str, client: &S3Client) -> Result
     let mut buffer = Vec::new();
     stream.read_to_end(&mut buffer).await?;
     Ok(str::from_utf8(&buffer)?.to_string())
+}
+
+pub async fn get_tags(bucket: &str, key: &str, client: &S3Client) -> Result<Vec<rusoto_s3::Tag>, Box<dyn Error>> {
+    let request = client.get_object_tagging(GetObjectTaggingRequest {
+        bucket: bucket.to_string(),
+            key: key.to_string(),
+            ..Default::default()
+    }).await?;
+    let mut tagset = request.tag_set;
+    tagset.sort_by(|a,b| a.key.partial_cmp(&b.key).unwrap());    
+    Ok(tagset)
 }
 
 pub trait ZfsSnapshotTesting {
