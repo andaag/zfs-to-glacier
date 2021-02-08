@@ -105,11 +105,13 @@ pub async fn get_all_files(
         let request = client
             .list_objects_v2(ListObjectsV2Request {
                 bucket: bucket.to_string(),
-                start_after: continuation_token,
+                continuation_token: continuation_token,
+                max_keys: Some(1000),
                 ..Default::default()
             })
             .await?;
-        continuation_token = request.continuation_token;
+        let a = request.next_continuation_token.clone();
+        continuation_token = request.next_continuation_token;
         scan = request.is_truncated.unwrap_or(false);
 
         if request.contents.is_some() {
