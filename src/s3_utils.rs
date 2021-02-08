@@ -110,7 +110,6 @@ pub async fn get_all_files(
                 ..Default::default()
             })
             .await?;
-        let a = request.next_continuation_token.clone();
         continuation_token = request.next_continuation_token;
         scan = request.is_truncated.unwrap_or(false);
 
