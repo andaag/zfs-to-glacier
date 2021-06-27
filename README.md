@@ -58,6 +58,16 @@ fi
 curl -fsS --retry 3 -X POST --data-raw "$(tail -n 20 backup.log)" $url
 ```
 
+### Building from source
+
+If you want to build from source rather than downloading a release:
+
+```sh
+# Install rust from your package manager, or use curl https://sh.rustup.rs -sSf | sh
+cargo build --release
+# the release executable is in target/release 
+```
+
 ### FAQ
 
 - How much will this cost?
