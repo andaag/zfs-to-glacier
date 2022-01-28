@@ -25,6 +25,7 @@ S3 snapshots are cheap... Especially if you are (like in my case) taking a backu
 
 1. zfs_to_glacier will keep your backups encrypted. They are sent with zfs send -w. This means if you do not have a backup of your backup key (if you use a key instead of a passphrase) you will *not* be able to recover your data from S3.
 2. zfs_to_glacier uses S3's expiry, which means if you stop running this tool the automatic expiry of old data will keep going. This will eventually clear out your backups. I recommend using healthchecks.io or something like it to ensure that your backups keep going.
+3. zfs_to_glacier will ignore glacier files for files under 128kb, just like intelligent tiering, since glacier minimum charges for all objects under 128kb.
 
 ## How reliable is this
 

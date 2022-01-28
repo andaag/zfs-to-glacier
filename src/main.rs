@@ -39,7 +39,7 @@ fn build_s3_client() -> S3Client {
 
 async fn app() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::new("ZFS S3 backup")
-        .version("0.1")
+        .version("0.2")
         .author("Anders Aagaard <aagaande@gmail.com>")
         .about("Sync ZFS backups to S3")
         .subcommand(
@@ -81,12 +81,6 @@ async fn app() -> Result<(), Box<dyn std::error::Error>> {
 
             for backup_action in actions {
                 let estimated_size = backup_action.get_estimated_size()?;
-                info!(
-                    "Processing file {}/{} - {}",
-                    actions_performed,
-                    total_actions,
-                    backup_action.key()
-                );
                 let pb = ProgressBar::new(estimated_size.try_into()?);
                 let pb_template = {
                     if verbose {
@@ -98,7 +92,20 @@ async fn app() -> Result<(), Box<dyn std::error::Error>> {
                 pb.set_style(ProgressStyle::default_bar()
                     .template(pb_template)
                     .progress_chars("#>-"));
-
+                let storage_class = {
+                    if estimated_size > 128000 { 
+                        backup_action.storage_class
+                    } else { 
+                        StorageClass::STANDARD
+                    }                
+                };
+                info!(
+                    "Processing file {}/{} - {} (storage class {})",
+                    actions_performed,
+                    total_actions,
+                    backup_action.key(),
+                    storage_class.to_string()
+                );
                 if !dryrun {
                     let mut tags: Vec<Tag> = Vec::new();
                     tags.push(Tag {
@@ -119,7 +126,7 @@ async fn app() -> Result<(), Box<dyn std::error::Error>> {
                         &backup_action.bucket,
                         &backup_action.key(),
                         tags,
-                        backup_action.storage_class,
+                        storage_class,
                         estimated_size,
                         |bytes_sent| {
                             pb.set_position(bytes_sent);
