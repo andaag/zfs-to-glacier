@@ -42,10 +42,10 @@ macro_rules! execute_in_docker {
             let docker = clients::Cli::default();
             let image = images::generic::GenericImage::new(format!("{}:{}", "minio/minio", "latest"))
                 .with_mapped_port((9000, 9000))
-                .with_env_var("MINIO_ACCESS_KEY", ACCESS_KEY)
-                .with_env_var("MINIO_SECRET_KEY", SECRET_KEY)
+                .with_env_var("MINIO_ROOT_USER", ACCESS_KEY)
+                .with_env_var("MINIO_ROOT_PASSWORD", SECRET_KEY)
                 .with_wait_for(WaitFor::LogMessage {
-                    message: "Browser Access:".to_string(),
+                    message: "Console:".to_string(),
                     stream: images::generic::Stream::StdOut,
                 })
                 .with_args(vec!["server".to_string(), "/data".to_string()]);
